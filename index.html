@@ -628,27 +628,36 @@
         let selectedNode = null;
         
         function createNode(data, parent = null) {
-            // Validate data has required properties
-            if (!data.color) {
-                console.warn('Node missing color:', data);
-                data.color = '#888888';
+            // Validate and fix data properties
+            if (!data.color || data.color === '' || data.color === undefined) {
+                console.warn('Node missing color, using fallback:', data);
+                data.color = parent ? parent.color : '#888888';
             }
-            if (!data.size) {
-                console.warn('Node missing size:', data);
+            if (!data.size || data.size === 0) {
+                console.warn('Node missing size, using fallback:', data);
                 data.size = 0.5;
             }
             if (!data.position) {
-                console.warn('Node missing position:', data);
+                console.warn('Node missing position, using fallback:', data);
                 data.position = [0, 0, 0];
             }
+            
+            console.log('Creating node:', data.label, 'with color:', data.color);
             
             const geometry = new THREE.SphereGeometry(data.size, 64, 64);
             
             // Create shader material for electric glow effect
-            const nodeColor = data.color || '#888888'; // Fallback color
+            const nodeColor = data.color || '#888888'; // Ensure we always have a color
+            
+            // Validate it's a valid hex color
+            if (!nodeColor.startsWith('#') || nodeColor.length < 4) {
+                console.error('Invalid color format:', nodeColor, 'for node:', data.label);
+                data.color = '#888888';
+            }
+            
             const material = new THREE.ShaderMaterial({
                 uniforms: {
-                    color: { value: new THREE.Color(nodeColor) },
+                    color: { value: new THREE.Color(data.color) },
                     glowIntensity: { value: 0.8 },
                     nodeSize: { value: data.size || 0.5 }
                 },
@@ -1229,8 +1238,14 @@
         }
         
         function selectNode(node) {
-            // If there's a previously selected node that's different and expanded, collapse it first
-            if (selectedNode && selectedNode !== node && selectedNode.userData.isExpanded) {
+            // Check if new node is a child of the currently selected node
+            const isChildOfSelected = selectedNode && 
+                                     selectedNode.userData.children && 
+                                     selectedNode.userData.children.some(child => child.id === node.userData.id);
+            
+            // If there's a previously selected node that's different and expanded,
+            // collapse it first UNLESS the new node is a child of it
+            if (selectedNode && selectedNode !== node && selectedNode.userData.isExpanded && !isChildOfSelected) {
                 explodeChildren(selectedNode);
             }
             
@@ -1503,9 +1518,11 @@
             const newNodeData = {
                 id: nodeName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
                 label: nodeName.toUpperCase(),
-                color: selectedColor,
+                color: selectedColor || parentNodeForNewChild.userData.color || '#888888', // Fallback to parent color or gray
                 children: []
             };
+            
+            console.log('Creating new node with color:', newNodeData.color);
             
             // Add to parent's children in data structure
             if (!parentNodeForNewChild.userData.children) {
