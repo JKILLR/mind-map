@@ -1597,6 +1597,61 @@
         window.addEventListener('mousemove', onMouseMoveForDrag);
         window.addEventListener('click', onClick);
         
+        // Touch event handlers for mobile
+        let touchStartPosition = { x: 0, y: 0 };
+        let isTouchDragging = false;
+        
+        function onTouchStart(event) {
+            if (event.touches.length === 1) {
+                const touch = event.touches[0];
+                touchStartPosition.x = touch.clientX;
+                touchStartPosition.y = touch.clientY;
+                isTouchDragging = false;
+            }
+        }
+        
+        function onTouchMove(event) {
+            if (event.touches.length === 1) {
+                const touch = event.touches[0];
+                const deltaX = Math.abs(touch.clientX - touchStartPosition.x);
+                const deltaY = Math.abs(touch.clientY - touchStartPosition.y);
+                
+                // If touch moved more than 5 pixels, consider it a drag
+                if (deltaX > 5 || deltaY > 5) {
+                    isTouchDragging = true;
+                }
+            }
+        }
+        
+        function onTouchEnd(event) {
+            // Don't trigger tap action if user was dragging
+            if (isTouchDragging) {
+                return;
+            }
+            
+            if (event.changedTouches.length === 1) {
+                const touch = event.changedTouches[0];
+                mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(nodes.filter(n => n.visible));
+                
+                if (intersects.length > 0) {
+                    const tappedNode = intersects[0].object;
+                    selectNode(tappedNode);
+                } else {
+                    // Tapped on empty space - zoom back out to main view
+                    resetToMainView();
+                }
+            }
+        }
+        
+        // Add touch event listeners
+        window.addEventListener('touchstart', onTouchStart, { passive: true });
+        window.addEventListener('touchmove', onTouchMove, { passive: true });
+        window.addEventListener('touchend', onTouchEnd);
+        
         // Control panel buttons
         document.getElementById('reset-view-btn').addEventListener('click', () => {
             resetToMainView();
