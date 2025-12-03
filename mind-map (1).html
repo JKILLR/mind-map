@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Map - 3D Interactive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            overflow: hidden;
+            background: #1a1f2e;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        
+        #header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        #header h1 {
+            margin: 0 0 5px 0;
+            font-size: 24px;
+        }
+        
+        #header p {
+            margin: 0;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+        
+        #info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: white;
+            max-width: 280px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+        }
+        
+        #info-panel.active {
+            display: block;
+        }
+        
+        #close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+        }
+        
+        #close-btn:hover {
+            opacity: 0.7;
+        }
+        
+        #node-title {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+        }
+        
+        #node-details {
+            opacity: 0.8;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        #add-node-btn {
+            margin-top: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        #add-node-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        #add-node-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        #add-node-modal.active {
+            display: flex;
+        }
+        
+        #modal-content {
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            border: 2px solid #667eea;
+        }
+        
+        #modal-content h3 {
+            color: white;
+            margin: 0 0 20px 0;
+            font-size: 22px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .color-picker-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-option.selected {
+            border-color: white;
+            box-shadow: 0 0 15px currentColor;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #modal-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        #modal-cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        #modal-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        #modal-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .node-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 10px;
+            font-weight: 600;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 0 0 8px rgba(0,0,0,0.6);
+            user-select: none;
+            white-space: nowrap;
+        }
+        
+        .node-badge {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(3px);
+            border: 1.5px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+        }
+        
+        #controls-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .control-btn {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateX(-3px);
+        }
+        
+        .control-btn:active {
+            transform: translateX(-3px) scale(0.95);
+        }
+        
+        #breadcrumb {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        #breadcrumb.active {
+            display: block;
+        }
+        
+        #breadcrumb span {
+            color: white;
+            font-weight: bold;
+        }
+        
+        .expand-indicator {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1.5px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading Mind Map...</div>
+    
+    <div id="header">
+        <h1>Mind Map</h1>
+        <p>Drag to rotate • Scroll to zoom • Click nodes to explore</p>
+    </div>
+    
+    <div id="controls-panel">
+        <button class="control-btn" id="reset-view-btn">
+            <span>🏠</span> Reset View
+        </button>
+        <button class="control-btn" id="expand-all-btn">
+            <span>➕</span> Expand All
+        </button>
+        <button class="control-btn" id="collapse-all-btn">
+            <span>➖</span> Collapse All
+        </button>
+    </div>
+    
+    <div id="breadcrumb">
+        Path: <span id="breadcrumb-path">MIND</span>
+    </div>
+    
+    <div id="canvas-container"></div>
+    
+    <div id="info-panel">
+        <button id="close-btn">×</button>
+        <h2 id="node-title"></h2>
+        <div id="node-details"></div>
+        <button id="add-node-btn">+ Add Child Node</button>
+    </div>
+    
+    <div id="add-node-modal">
+        <div id="modal-content">
+            <h3>Add New Node</h3>
+            <div class="form-group">
+                <label>Node Name</label>
+                <input type="text" id="node-name-input" placeholder="Enter node name..." maxlength="30">
+            </div>
+            <div class="form-group">
+                <label>Color</label>
+                <div class="color-picker-container">
+                    <div class="color-option selected" data-color="#3f51b5" style="background: #3f51b5;"></div>
+                    <div class="color-option" data-color="#4caf50" style="background: #4caf50;"></div>
+                    <div class="color-option" data-color="#ff9800" style="background: #ff9800;"></div>
+                    <div class="color-option" data-color="#9c27b0" style="background: #9c27b0;"></div>
+                    <div class="color-option" data-color="#f44336" style="background: #f44336;"></div>
+                    <div class="color-option" data-color="#00bcd4" style="background: #00bcd4;"></div>
+                    <div class="color-option" data-color="#ff5722" style="background: #ff5722;"></div>
+                    <div class="color-option" data-color="#e91e63" style="background: #e91e63;"></div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="modal-cancel">Cancel</button>
+                <button id="modal-submit">Add Node</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        (async function() {
+            // Update loading status
+            function updateStatus(msg) {
+                const loadingEl = document.getElementById('loading');
+                if (loadingEl) loadingEl.innerHTML = msg;
+                console.log(msg);
+            }
+            
+            updateStatus('Loading Mind Map... Step 1: Starting');
+            
+            // Add timeout to detect if initialization hangs
+            setTimeout(() => {
+                const loadingEl = document.getElementById('loading');
+                if (loadingEl && loadingEl.style.display !== 'none') {
+                    loadingEl.innerHTML = 'Error: Failed to initialize. Your browser may not support required features.';
+                }
+            }, 10000); // 10 second timeout
+            
+            try {
+                updateStatus('Loading Mind Map... Step 2: Importing Three.js');
+                
+                const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
+                updateStatus('Loading Mind Map... Step 3: Three.js loaded');
+                
+                const { OrbitControls } = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js');
+                updateStatus('Loading Mind Map... Step 4: OrbitControls loaded');
+
+        // Sample data structure
+        const mindData = {
+            id: 'mind',
+            label: 'MIND',
+            color: '#e91e63',
+            position: [0, 0, 0],
+            size: 1.5,
+            children: [
+                {
+                    id: 'goals',
+                    label: 'GOALS',
+                    color: '#3f51b5',
+                    children: [
+                        { id: 'learn-coding', label: 'LEARN CODING', color: '#5c6bc0' },
+                        { id: 'run-mabook', label: 'RUN MARATHON', color: '#5c6bc0' },
+                        { id: 'write-book', label: 'WRITE BOOK', color: '#5c6bc0' }
+                    ]
+                },
+                {
+                    id: 'work',
+                    label: 'WORK',
+                    color: '#4caf50',
+                    children: [
+                        { id: 'project-a', label: 'PROJECT A', color: '#66bb6a' },
+                        { id: 'meeting-notes', label: 'MEETING NOTES', color: '#66bb6a' },
+                        { id: 'client-work', label: 'CLIENT WORK', color: '#66bb6a' }
+                    ]
+                },
+                {
+                    id: 'personal',
+                    label: 'PERSONAL',
+                    color: '#ff9800',
+                    children: [
+                        { id: 'birthday-list', label: 'BIRTHDAY LIST', color: '#ffa726' },
+                        { id: 'grocery-trip', label: 'GROCERY TRIP', color: '#ffa726' },
+                        { id: 'hobby-ideas', label: 'HOBBY IDEAS', color: '#ffa726' }
+                    ]
+                },
+                {
+                    id: 'reminders',
+                    label: 'REMINDERS',
+                    color: '#9c27b0',
+                    children: [
+                        { id: 'appointment', label: 'APPOINTMENT', color: '#ab47bc' },
+                        { id: 'pay-bills', label: 'PAY BILLS', color: '#ab47bc' },
+                        { id: 'call-mom', label: 'CALL MOM', color: '#ab47bc' }
+                    ]
+                }
+            ]
+        };
+
+        // Calculate positions for nodes
+        function calculateNodePositions(node, parentPos = [0, 0, 0], level = 0, angleOffset = 0, totalSiblings = 1, siblingIndex = 0, parentSize = 1.5) {
+            // Increased size difference between levels
+            if (level === 0) {
+                node.size = 2.0;  // Central mind sphere - larger
+            } else if (level === 1) {
+                node.size = 0.9;  // Main categories
+            } else {
+                node.size = 0.4;  // Sub-items - smaller
+            }
+            
+            // Branch length based on parent size - smaller parents = shorter branches
+            // Level 0 (MIND): radius = 6
+            // Level 1 (categories): radius = 3.5
+            // Level 2 (items): radius = 2
+            let radius;
+            if (level === 0) {
+                radius = 0; // center node
+            } else if (level === 1) {
+                radius = 6; // branches from center
+            } else {
+                radius = 2.5; // shorter branches from smaller nodes
+            }
+            
+            const angleStep = (Math.PI * 2) / Math.max(totalSiblings, 1);
+            const angle = angleOffset + angleStep * siblingIndex;
+            
+            // Vertical spread proportional to level
+            const verticalSpread = radius * 0.3;
+            const verticalOffset = (siblingIndex - totalSiblings / 2) * verticalSpread;
+            
+            const x = parentPos[0] + Math.cos(angle) * radius;
+            const y = parentPos[1] + verticalOffset;
+            const z = parentPos[2] + Math.sin(angle) * radius;
+            
+            node.position = [x, y, z];
+            
+            if (node.children) {
+                node.children.forEach((child, idx) => {
+                    calculateNodePositions(child, node.position, level + 1, angle, node.children.length, idx, node.size);
+                });
+            }
+            
+            return node;
+        }
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1f2e);
+        scene.fog = new THREE.FogExp2(0x1a1f2e, 0.015);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 15);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 50;
+        
+        // Lighting - more dramatic and atmospheric
+        const ambientLight = new THREE.AmbientLight(0x6a7aaa, 0.7);
+        scene.add(ambientLight);
+        
+        const pointLight1 = new THREE.PointLight(0x6a7fdb, 2, 100);
+        pointLight1.position.set(10, 10, 10);
+        scene.add(pointLight1);
+        
+        const pointLight2 = new THREE.PointLight(0xe91e63, 1.5, 100);
+        pointLight2.position.set(-10, -10, -10);
+        scene.add(pointLight2);
+        
+        const pointLight3 = new THREE.PointLight(0x00d4ff, 1, 50);
+        pointLight3.position.set(0, 15, 0);
+        scene.add(pointLight3);
+        
+        // Add rim light
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        rimLight.position.set(0, 0, -10);
+        scene.add(rimLight);
+        
+        // Stars - more dramatic and varied
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({
+            size: 0.15,
+            transparent: true,
+            opacity: 0.9,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending
+        });
+        
+        const starsVertices = [];
+        const starsColors = [];
+        for (let i = 0; i < 8000; i++) {
+            const x = (Math.random() - 0.5) * 200;
+            const y = (Math.random() - 0.5) * 200;
+            const z = (Math.random() - 0.5) * 200;
+            starsVertices.push(x, y, z);
+            
+            // Add color variation to stars
+            const colorChoice = Math.random();
+            if (colorChoice < 0.3) {
+                starsColors.push(0.6, 0.7, 1.0); // Blue-ish
+            } else if (colorChoice < 0.6) {
+                starsColors.push(1.0, 0.9, 0.8); // White-ish
+            } else {
+                starsColors.push(0.9, 0.6, 1.0); // Purple-ish
+            }
+        }
+        
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+        starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starsColors, 3));
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+        
+        // Create nodes
+        const nodes = [];
+        const connections = [];
+        let selectedNode = null;
+        
+        function createNode(data, parent = null) {
+            // Validate data has required properties
+            if (!data.color) {
+                console.warn('Node missing color:', data);
+                data.color = '#888888';
+            }
+            if (!data.size) {
+                console.warn('Node missing size:', data);
+                data.size = 0.5;
+            }
+            if (!data.position) {
+                console.warn('Node missing position:', data);
+                data.position = [0, 0, 0];
+            }
+            
+            const geometry = new THREE.SphereGeometry(data.size, 64, 64);
+            
+            // Create shader material for electric glow effect
+            const nodeColor = data.color || '#888888'; // Fallback color
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    color: { value: new THREE.Color(nodeColor) },
+                    glowIntensity: { value: 0.8 },
+                    nodeSize: { value: data.size || 0.5 }
+                },
+                vertexShader: `
+                    varying vec3 vNormal;
+                    varying vec3 vPosition;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        vPosition = position;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 color;
+                    uniform float glowIntensity;
+                    uniform float nodeSize;
+                    varying vec3 vNormal;
+                    varying vec3 vPosition;
+                    
+                    void main() {
+                        // Distance from center creates radial gradient
+                        float distanceFromCenter = length(vPosition) / max(nodeSize, 0.1);
+                        
+                        // Fresnel effect - edges glow more
+                        vec3 viewDirection = normalize(cameraPosition - vPosition);
+                        float fresnel = pow(1.0 - abs(dot(vNormal, viewDirection)), 2.0);
+                        
+                        // Bright white core fading to color at edges
+                        vec3 coreColor = mix(vec3(1.0, 1.0, 1.0), color, distanceFromCenter * 0.7);
+                        
+                        // Add electric glow
+                        vec3 baseColor = mix(coreColor, color, 0.3) + (fresnel * color * glowIntensity);
+                        
+                        // Add white gradient at outer edges for softer transition
+                        float edgeFactor = smoothstep(0.7, 1.0, distanceFromCenter);
+                        vec3 finalColor = mix(baseColor, vec3(1.0, 1.0, 1.0), edgeFactor * 0.3);
+                        
+                        // Fade out at very edges for smooth blending
+                        float edgeAlpha = 1.0 - smoothstep(0.85, 1.0, distanceFromCenter) * 0.3;
+                        
+                        gl_FragColor = vec4(finalColor, 1.0);
+                    }
+                `,
+                transparent: false,
+                side: THREE.DoubleSide
+            });
+            
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(...data.position);
+            mesh.userData = data;
+            mesh.userData.level = parent ? (parent.level || 0) + 1 : 0;
+            mesh.userData.parent = parent;
+            mesh.userData.isExpanded = false;
+            mesh.userData.shaderMaterial = material;
+            
+            // Ensure proper settings - not transparent for solid appearance
+            mesh.material.transparent = false;
+            mesh.material.opacity = 1.0;
+            
+            scene.add(mesh);
+            nodes.push(mesh);
+            
+            // Add outer glow sphere with softer white-to-color blend
+            const glowGeometry = new THREE.SphereGeometry(data.size * 1.2, 32, 32);
+            const glowMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    glowColor: { value: new THREE.Color(data.color) }
+                },
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 glowColor;
+                    varying vec3 vNormal;
+                    void main() {
+                        vec3 viewDirection = vec3(0.0, 0.0, 1.0);
+                        float intensity = pow(0.7 - dot(vNormal, viewDirection), 2.0);
+                        
+                        // More subtle blend - 50% white, 50% color
+                        vec3 softGlow = mix(vec3(1.0, 1.0, 1.0), glowColor, 0.5);
+                        
+                        gl_FragColor = vec4(softGlow, intensity * 0.6);
+                    }
+                `,
+                transparent: true,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending
+            });
+            const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+            glowMesh.position.set(...data.position);
+            glowMesh.visible = mesh.visible;
+            scene.add(glowMesh);
+            mesh.userData.glowMesh = glowMesh;
+            
+            // Add a thinner, softer white rim
+            const rimGeometry = new THREE.SphereGeometry(data.size * 1.08, 32, 32);
+            const rimMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    glowColor: { value: new THREE.Color(data.color) }
+                },
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 glowColor;
+                    varying vec3 vNormal;
+                    void main() {
+                        vec3 viewDirection = vec3(0.0, 0.0, 1.0);
+                        float intensity = pow(0.5 - dot(vNormal, viewDirection), 3.0);
+                        
+                        // Subtle white rim - 70% white, 30% color
+                        vec3 whiteRim = mix(vec3(1.0, 1.0, 1.0), glowColor, 0.3);
+                        
+                        gl_FragColor = vec4(whiteRim, intensity * 0.7);
+                    }
+                `,
+                transparent: true,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending
+            });
+            const rimMesh = new THREE.Mesh(rimGeometry, rimMaterial);
+            rimMesh.position.set(...data.position);
+            rimMesh.visible = mesh.visible;
+            scene.add(rimMesh);
+            mesh.userData.rimMesh = rimMesh;
+            
+            // Hide child nodes (level 2+) initially
+            if (mesh.userData.level >= 2) {
+                mesh.visible = false;
+                mesh.userData.collapsed = true;
+                glowMesh.visible = false;
+                rimMesh.visible = false;
+            }
+            
+            // Add inner particle effect for the central MIND node
+            if (mesh.userData.level === 0) {
+                const particleCount = 200;
+                const particleGeometry = new THREE.BufferGeometry();
+                const particlePositions = new Float32Array(particleCount * 3);
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const radius = Math.random() * data.size * 0.8;
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.random() * Math.PI;
+                    
+                    particlePositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+                    particlePositions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                    particlePositions[i * 3 + 2] = radius * Math.cos(phi);
+                }
+                
+                particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+                
+                const particleMaterial = new THREE.PointsMaterial({
+                    color: 0xffffff,
+                    size: 0.03,
+                    transparent: true,
+                    opacity: 0.6,
+                    blending: THREE.AdditiveBlending
+                });
+                
+                const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+                particleSystem.position.set(...data.position);
+                scene.add(particleSystem);
+                mesh.userData.particleSystem = particleSystem;
+            }
+            
+            // Create permanent label
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'node-label';
+            labelDiv.textContent = data.label;
+            labelDiv.style.position = 'absolute';
+            labelDiv.style.display = 'block';
+            document.body.appendChild(labelDiv);
+            mesh.userData.labelDiv = labelDiv;
+            
+            // Connection to parent with glowing line
+            if (parent) {
+                // Calculate direction vector from parent to child
+                const parentPos = new THREE.Vector3(...parent.position);
+                const childPos = new THREE.Vector3(...data.position);
+                const direction = new THREE.Vector3().subVectors(childPos, parentPos).normalize();
+                
+                // Calculate edge points by offsetting from center by node radius
+                const parentEdge = parentPos.clone().add(direction.clone().multiplyScalar(parent.size));
+                const childEdge = childPos.clone().sub(direction.clone().multiplyScalar(data.size));
+                
+                // Create tube geometry for thicker lines between edge points
+                const curve = new THREE.LineCurve3(parentEdge, childEdge);
+                const tubeGeometry = new THREE.TubeGeometry(curve, 20, 0.04, 8, false);
+                
+                const tubeMaterial = new THREE.MeshBasicMaterial({
+                    color: data.color,
+                    transparent: true,
+                    opacity: 0.4
+                });
+                
+                const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+                
+                // Hide connections to hidden nodes
+                if (mesh.userData.level >= 2) {
+                    tube.visible = false;
+                }
+                
+                scene.add(tube);
+                connections.push(tube);
+                mesh.userData.connectionLine = tube;
+            }
+            
+            // Process children
+            if (data.children) {
+                data.children.forEach(child => createNode(child, data));
+            }
+        }
+        
+        // Build scene
+        const processedData = calculateNodePositions(JSON.parse(JSON.stringify(mindData)));
+        createNode(processedData);
+        
+        // Raycaster for mouse interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let hoveredNode = null;
+        
+        // Mouse move handler
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(nodes.filter(n => n.visible));
+            
+            // Reset previous hover
+            if (hoveredNode && hoveredNode !== selectedNode) {
+                if (hoveredNode.material.uniforms) {
+                    hoveredNode.material.uniforms.glowIntensity.value = 0.8;
+                }
+                hoveredNode.scale.set(1, 1, 1);
+            }
+            
+            if (intersects.length > 0) {
+                hoveredNode = intersects[0].object;
+                if (hoveredNode !== selectedNode && hoveredNode.visible) {
+                    if (hoveredNode.material.uniforms) {
+                        hoveredNode.material.uniforms.glowIntensity.value = 1.5;
+                    }
+                    hoveredNode.scale.set(1.15, 1.15, 1.15);
+                }
+                
+                renderer.domElement.style.cursor = 'pointer';
+            } else {
+                hoveredNode = null;
+                renderer.domElement.style.cursor = 'default';
+            }
+        }
+        
+        // Click handler with drag detection
+        let mouseDownPosition = { x: 0, y: 0 };
+        let isDragging = false;
+        
+        function onMouseDown(event) {
+            mouseDownPosition.x = event.clientX;
+            mouseDownPosition.y = event.clientY;
+            isDragging = false;
+        }
+        
+        function onMouseMoveForDrag(event) {
+            const deltaX = Math.abs(event.clientX - mouseDownPosition.x);
+            const deltaY = Math.abs(event.clientY - mouseDownPosition.y);
+            
+            // If mouse moved more than 5 pixels, consider it a drag
+            if (deltaX > 5 || deltaY > 5) {
+                isDragging = true;
+            }
+        }
+        
+        function onClick(event) {
+            // Don't trigger click action if user was dragging
+            if (isDragging) {
+                return;
+            }
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(nodes.filter(n => n.visible));
+            
+            if (intersects.length > 0) {
+                const clickedNode = intersects[0].object;
+                selectNode(clickedNode);
+            } else {
+                // Clicked on empty space - zoom back out to main view
+                resetToMainView();
+            }
+        }
+        
+        // Reset camera to main view
+        function resetToMainView() {
+            // Close info panel
+            document.getElementById('info-panel').classList.remove('active');
+            
+            // Hide breadcrumb
+            document.getElementById('breadcrumb').classList.remove('active');
+            
+            // Reset selected node
+            if (selectedNode) {
+                selectedNode.material.emissiveIntensity = 0.4;
+                selectedNode.userData.glowMesh.material.opacity = 0.15;
+                selectedNode.scale.set(1, 1, 1);
+                selectedNode = null;
+            }
+            
+            // Collapse all expanded secondary nodes (level 1)
+            nodes.forEach(node => {
+                if (node.userData.level === 1 && node.userData.isExpanded) {
+                    explodeChildren(node); // Toggle to collapse
+                }
+            });
+            
+            // Restore all nodes to full visibility
+            nodes.forEach(n => {
+                if (n.visible) {
+                    if (n.material.uniforms) {
+                        n.material.uniforms.glowIntensity.value = 0.8;
+                    }
+                    n.material.transparent = false;
+                    n.material.opacity = 1.0;
+                    
+                    // Restore labels
+                    if (n.userData.labelDiv) {
+                        n.userData.labelDiv.style.display = 'block';
+                        n.userData.labelDiv.style.opacity = '1';
+                    }
+                    if (n.userData.badgeDiv) {
+                        n.userData.badgeDiv.style.display = 'flex';
+                        n.userData.badgeDiv.style.opacity = '1';
+                    }
+                }
+            });
+            
+            // Restore all connections
+            connections.forEach(conn => {
+                if (conn.visible) {
+                    conn.material.opacity = 0.3;
+                }
+            });
+            
+            // Animate camera back to main view
+            const targetPosition = new THREE.Vector3(0, 5, 15);
+            const targetLookAt = new THREE.Vector3(0, 0, 0);
+            const currentCameraPosition = camera.position.clone();
+            const currentTarget = controls.target.clone();
+            
+            const animationDuration = 1000;
+            const startTime = Date.now();
+            
+            function animateReturn() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                
+                // Easing function (ease-in-out)
+                const easeProgress = progress < 0.5
+                    ? 2 * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                
+                // Interpolate camera position
+                camera.position.lerpVectors(currentCameraPosition, targetPosition, easeProgress);
+                
+                // Interpolate controls target
+                controls.target.lerpVectors(currentTarget, targetLookAt, easeProgress);
+                controls.update();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateReturn);
+                }
+            }
+            
+            animateReturn();
+        }
+        
+        // Exploding animation for child nodes
+        function explodeChildren(parentNode) {
+            if (!parentNode.userData.children || parentNode.userData.children.length === 0) {
+                return;
+            }
+            
+            // Toggle expansion state
+            parentNode.userData.isExpanded = !parentNode.userData.isExpanded;
+            
+            // Find child meshes
+            const childMeshes = nodes.filter(node => {
+                return parentNode.userData.children.some(child => child.id === node.userData.id);
+            });
+            
+            if (parentNode.userData.isExpanded) {
+                // Explode animation - show children
+                childMeshes.forEach((childMesh, index) => {
+                    childMesh.visible = true;
+                    childMesh.userData.collapsed = false;
+                    // Ensure material transparency is enabled
+                    childMesh.material.transparent = true;
+                    // Keep glow and rim hidden during animation
+                    childMesh.userData.glowMesh.visible = false;
+                    if (childMesh.userData.rimMesh) {
+                        childMesh.userData.rimMesh.visible = false;
+                    }
+                    
+                    // Start from parent position
+                    const parentPos = new THREE.Vector3(...parentNode.userData.position);
+                    const targetPos = new THREE.Vector3(...childMesh.userData.position);
+                    
+                    childMesh.position.copy(parentPos);
+                    childMesh.scale.set(0.1, 0.1, 0.1);
+                    childMesh.material.opacity = 0;
+                    
+                    // Keep connection hidden initially
+                    if (childMesh.userData.connectionLine) {
+                        childMesh.userData.connectionLine.visible = false;
+                    }
+                    
+                    // Animate explosion
+                    const delay = index * 100;
+                    const duration = 600;
+                    
+                    setTimeout(() => {
+                        const startTime = Date.now();
+                        
+                        function animateExplosion() {
+                            const elapsed = Date.now() - startTime;
+                            const progress = Math.min(elapsed / duration, 1);
+                            
+                            // Ease-out-back for bouncy effect
+                            const c1 = 1.70158;
+                            const c3 = c1 + 1;
+                            const easeProgress = 1 + c3 * Math.pow(progress - 1, 3) + c1 * Math.pow(progress - 1, 2);
+                            
+                            // Interpolate position
+                            childMesh.position.lerpVectors(parentPos, targetPos, easeProgress);
+                            
+                            // Update glow and rim positions to follow the node
+                            childMesh.userData.glowMesh.position.copy(childMesh.position);
+                            if (childMesh.userData.rimMesh) {
+                                childMesh.userData.rimMesh.position.copy(childMesh.position);
+                            }
+                            
+                            // Scale up
+                            const scale = 0.1 + (0.9 * easeProgress);
+                            childMesh.scale.set(scale, scale, scale);
+                            
+                            // Fade in - ensure transparent stays true
+                            childMesh.material.transparent = true;
+                            childMesh.material.opacity = 1.0 * progress;
+                            
+                            // Show and grow connection line
+                            if (childMesh.userData.connectionLine && progress > 0.15) {
+                                childMesh.userData.connectionLine.visible = true;
+                                
+                                // Update tube to connect parent edge to current child edge position
+                                const currentPos = childMesh.position.clone();
+                                const direction = new THREE.Vector3().subVectors(currentPos, parentPos).normalize();
+                                const parentEdge = parentPos.clone().add(direction.clone().multiplyScalar(parentNode.userData.size));
+                                const childEdge = currentPos.clone().sub(direction.clone().multiplyScalar(childMesh.userData.size));
+                                
+                                const curve = new THREE.LineCurve3(parentEdge, childEdge);
+                                const newTubeGeometry = new THREE.TubeGeometry(curve, 20, 0.04, 8, false);
+                                
+                                childMesh.userData.connectionLine.geometry.dispose();
+                                childMesh.userData.connectionLine.geometry = newTubeGeometry;
+                                childMesh.userData.connectionLine.material.opacity = 0.4 * ((progress - 0.15) / 0.85);
+                            }
+                            
+                            if (progress < 1) {
+                                requestAnimationFrame(animateExplosion);
+                            } else {
+                                childMesh.scale.set(1, 1, 1);
+                                childMesh.material.transparent = false; // Solid when animation complete
+                                childMesh.material.opacity = 1.0;
+                                if (childMesh.userData.connectionLine) {
+                                    childMesh.userData.connectionLine.material.opacity = 0.4;
+                                }
+                                // Show glow and rim only when animation is complete
+                                childMesh.userData.glowMesh.visible = true;
+                                if (childMesh.userData.rimMesh) {
+                                    childMesh.userData.rimMesh.visible = true;
+                                }
+                            }
+                        }
+                        
+                        animateExplosion();
+                    }, delay);
+                });
+            } else {
+                // Collapse animation - hide children
+                childMeshes.forEach((childMesh, index) => {
+                    // Ensure material transparency is enabled
+                    childMesh.material.transparent = true;
+                    
+                    const parentPos = new THREE.Vector3(...parentNode.userData.position);
+                    const startPos = childMesh.position.clone();
+                    
+                    const duration = 400;
+                    const startTime = Date.now();
+                    
+                    function animateCollapse() {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        
+                        // Ease-in for smooth collapse
+                        const easeProgress = progress * progress;
+                        
+                        // Move to parent
+                        childMesh.position.lerpVectors(startPos, parentPos, easeProgress);
+                        
+                        // Update glow and rim positions to follow the node
+                        childMesh.userData.glowMesh.position.copy(childMesh.position);
+                        if (childMesh.userData.rimMesh) {
+                            childMesh.userData.rimMesh.position.copy(childMesh.position);
+                        }
+                        
+                        // Scale down
+                        const scale = 1 - (0.9 * easeProgress);
+                        childMesh.scale.set(scale, scale, scale);
+                        
+                        // Fade out
+                        childMesh.material.opacity = 1.0 * (1 - progress);
+                        
+                        // Update connection tube during collapse
+                        if (childMesh.userData.connectionLine) {
+                            const currentPos = childMesh.position.clone();
+                            const distance = currentPos.distanceTo(parentPos);
+                            
+                            if (distance > 0.1) {
+                                const direction = new THREE.Vector3().subVectors(currentPos, parentPos).normalize();
+                                const parentEdge = parentPos.clone().add(direction.clone().multiplyScalar(parentNode.userData.size));
+                                const childEdge = currentPos.clone().sub(direction.clone().multiplyScalar(childMesh.userData.size));
+                                
+                                const curve = new THREE.LineCurve3(parentEdge, childEdge);
+                                const newTubeGeometry = new THREE.TubeGeometry(curve, 20, 0.04, 8, false);
+                                
+                                childMesh.userData.connectionLine.geometry.dispose();
+                                childMesh.userData.connectionLine.geometry = newTubeGeometry;
+                            }
+                            
+                            childMesh.userData.connectionLine.material.opacity = 0.4 * (1 - progress);
+                        }
+                        
+                        if (progress < 1) {
+                            requestAnimationFrame(animateCollapse);
+                        } else {
+                            childMesh.visible = false;
+                            childMesh.userData.collapsed = true;
+                            childMesh.userData.glowMesh.visible = false;
+                            if (childMesh.userData.rimMesh) {
+                                childMesh.userData.rimMesh.visible = false;
+                            }
+                            if (childMesh.userData.connectionLine) {
+                                childMesh.userData.connectionLine.visible = false;
+                            }
+                            
+                            // Collapse this child's children too
+                            if (childMesh.userData.isExpanded) {
+                                explodeChildren(childMesh);
+                            }
+                        }
+                    }
+                    
+                    animateCollapse();
+                });
+            }
+        }
+        
+        function selectNode(node) {
+            // If there's a previously selected node that's different and expanded, collapse it first
+            if (selectedNode && selectedNode !== node && selectedNode.userData.isExpanded) {
+                explodeChildren(selectedNode);
+            }
+            
+            // Trigger explosion if node has children
+            if (node.userData.children && node.userData.children.length > 0) {
+                explodeChildren(node);
+            }
+            
+            // Reset previous selection
+            if (selectedNode) {
+                if (selectedNode.material.uniforms) {
+                    selectedNode.material.uniforms.glowIntensity.value = 0.8;
+                }
+                selectedNode.scale.set(1, 1, 1);
+            }
+            
+            selectedNode = node;
+            if (selectedNode.material.uniforms) {
+                selectedNode.material.uniforms.glowIntensity.value = 2.0;
+            }
+            selectedNode.scale.set(1.2, 1.2, 1.2);
+            
+            // Get related nodes (parent and children)
+            const relatedNodeIds = new Set([node.userData.id]);
+            
+            // Add children IDs
+            if (node.userData.children) {
+                node.userData.children.forEach(child => {
+                    relatedNodeIds.add(child.id);
+                });
+            }
+            
+            // Find parent by checking which node has this as a child
+            nodes.forEach(n => {
+                if (n.userData.children) {
+                    const hasChild = n.userData.children.some(child => child.id === node.userData.id);
+                    if (hasChild) {
+                        relatedNodeIds.add(n.userData.id);
+                    }
+                }
+            });
+            
+            // Fade surrounding nodes
+            nodes.forEach(n => {
+                // First, hide ALL labels by default when any selection is active
+                if (n.userData.labelDiv) {
+                    n.userData.labelDiv.style.display = 'none';
+                }
+                
+                if (relatedNodeIds.has(n.userData.id) && n.visible) {
+                    // Keep selected node and related nodes fully visible
+                    if (n.material.uniforms) {
+                        n.material.uniforms.glowIntensity.value = n === selectedNode ? 2.0 : 1.2;
+                    }
+                    n.material.opacity = 1.0;
+                    
+                    // Only show label for selected node and its direct children
+                    // This prevents parent/sibling labels from showing through
+                    const isSelectedNode = n === selectedNode;
+                    const isChildOfSelected = node.userData.children && node.userData.children.some(child => child.id === n.userData.id);
+                    
+                    if (isSelectedNode || isChildOfSelected) {
+                        if (n.userData.labelDiv) {
+                            n.userData.labelDiv.style.display = 'block';
+                            n.userData.labelDiv.style.opacity = '1';
+                        }
+                    }
+                    // All other labels stay hidden (parent, siblings, etc.)
+                    
+                    if (n.userData.badgeDiv) {
+                        n.userData.badgeDiv.style.display = 'flex';
+                        n.userData.badgeDiv.style.opacity = '1';
+                    }
+                } else if (n.visible) {
+                    // Fade unrelated nodes
+                    if (n.material.uniforms) {
+                        n.material.uniforms.glowIntensity.value = 0.3;
+                    }
+                    n.material.opacity = 0.15;
+                    
+                    // Labels already hidden above
+                    if (n.userData.badgeDiv) {
+                        n.userData.badgeDiv.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Fade connections
+            connections.forEach(conn => {
+                if (conn.visible) {
+                    conn.material.opacity = 0.15;
+                }
+            });
+            
+            // Keep connections to/from selected node visible
+            if (node.userData.children) {
+                node.userData.children.forEach(childData => {
+                    connections.forEach(conn => {
+                        if (!conn.visible) return;
+                        
+                        // Check if this connection belongs to the selected node's children
+                        const childMesh = nodes.find(n => n.userData.id === childData.id);
+                        if (childMesh && childMesh.userData.connectionLine === conn) {
+                            conn.material.opacity = 0.6;
+                        }
+                    });
+                });
+            }
+            
+            // Animate camera to focus on selected node
+            const nodePosition = new THREE.Vector3(...node.userData.position);
+            const mindPosition = new THREE.Vector3(0, 0, 0); // Central MIND node position
+            const currentCameraPosition = camera.position.clone();
+            const currentTarget = controls.target.clone();
+            
+            // Calculate new camera position
+            // Direction from MIND to selected node in XZ plane only (no Y rotation)
+            const mindToNode = new THREE.Vector3(
+                nodePosition.x - mindPosition.x,
+                0, // Lock Y to 0 for horizontal plane only
+                nodePosition.z - mindPosition.z
+            ).normalize();
+            
+            // Position camera on the opposite side (so MIND is behind)
+            const distance = 10; // Zoom distance
+            const newCameraPosition = new THREE.Vector3(
+                nodePosition.x + mindToNode.x * distance,
+                nodePosition.y + 5, // Keep consistent vertical offset
+                nodePosition.z + mindToNode.z * distance
+            );
+            
+            // Animate camera position and controls target
+            const animationDuration = 1000; // milliseconds
+            const startTime = Date.now();
+            
+            function animateCamera() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                
+                // Easing function (ease-in-out)
+                const easeProgress = progress < 0.5
+                    ? 2 * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                
+                // Interpolate camera position
+                camera.position.lerpVectors(currentCameraPosition, newCameraPosition, easeProgress);
+                
+                // Interpolate controls target
+                controls.target.lerpVectors(currentTarget, nodePosition, easeProgress);
+                controls.update();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateCamera);
+                }
+            }
+            
+            animateCamera();
+            
+            // Show info panel
+            const infoPanel = document.getElementById('info-panel');
+            const nodeTitle = document.getElementById('node-title');
+            const nodeDetails = document.getElementById('node-details');
+            
+            nodeTitle.textContent = node.userData.label;
+            nodeTitle.style.color = node.userData.color;
+            infoPanel.style.borderColor = node.userData.color;
+            infoPanel.style.boxShadow = `0 0 30px ${node.userData.color}80`;
+            
+            let detailsHTML = `<p>Category: ${node.userData.id}</p>`;
+            if (node.userData.children) {
+                const expandText = node.userData.isExpanded ? 'Expanded' : 'Collapsed';
+                detailsHTML += `<p>Contains ${node.userData.children.length} items (${expandText})</p>`;
+            }
+            nodeDetails.innerHTML = detailsHTML;
+            
+            infoPanel.classList.add('active');
+            
+            // Update breadcrumb
+            updateBreadcrumb(node);
+        }
+        
+        // Update breadcrumb path
+        function updateBreadcrumb(node) {
+            const breadcrumb = document.getElementById('breadcrumb');
+            const breadcrumbPath = document.getElementById('breadcrumb-path');
+            
+            if (node) {
+                breadcrumb.classList.add('active');
+                
+                // Build path from node up to root
+                const path = [];
+                let current = node;
+                
+                path.unshift(current.userData.label);
+                
+                // Find parent
+                while (current) {
+                    const parent = nodes.find(n => 
+                        n.userData.children && 
+                        n.userData.children.some(child => child.id === current.userData.id)
+                    );
+                    if (parent) {
+                        path.unshift(parent.userData.label);
+                        current = parent;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Always start with MIND
+                if (path[0] !== 'MIND') {
+                    path.unshift('MIND');
+                }
+                
+                breadcrumbPath.textContent = path.join(' > ');
+            } else {
+                breadcrumb.classList.remove('active');
+            }
+        }
+        
+        // Close button handler
+        document.getElementById('close-btn').addEventListener('click', () => {
+            resetToMainView();
+        });
+        
+        // Add node button handler
+        let parentNodeForNewChild = null;
+        
+        document.getElementById('add-node-btn').addEventListener('click', () => {
+            if (selectedNode) {
+                parentNodeForNewChild = selectedNode;
+                document.getElementById('add-node-modal').classList.add('active');
+                document.getElementById('node-name-input').value = '';
+                document.getElementById('node-name-input').focus();
+            }
+        });
+        
+        // Color picker
+        let selectedColor = '#3f51b5';
+        const colorOptions = document.querySelectorAll('.color-option');
+        colorOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                colorOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedColor = option.dataset.color;
+            });
+        });
+        
+        // Modal cancel
+        document.getElementById('modal-cancel').addEventListener('click', () => {
+            document.getElementById('add-node-modal').classList.remove('active');
+            parentNodeForNewChild = null;
+        });
+        
+        // Modal submit - add new node
+        document.getElementById('modal-submit').addEventListener('click', () => {
+            const nodeName = document.getElementById('node-name-input').value.trim();
+            
+            if (!nodeName) {
+                alert('Please enter a node name');
+                return;
+            }
+            
+            if (!parentNodeForNewChild) {
+                alert('No parent node selected');
+                return;
+            }
+            
+            // Create new node data
+            const newNodeData = {
+                id: nodeName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+                label: nodeName.toUpperCase(),
+                color: selectedColor,
+                children: []
+            };
+            
+            // Add to parent's children in data structure
+            if (!parentNodeForNewChild.userData.children) {
+                parentNodeForNewChild.userData.children = [];
+            }
+            parentNodeForNewChild.userData.children.push(newNodeData);
+            
+            // Recalculate positions for all children
+            const parentData = parentNodeForNewChild.userData;
+            const level = getNodeLevel(parentNodeForNewChild);
+            
+            parentData.children.forEach((child, idx) => {
+                calculateNodePositions(
+                    child,
+                    parentData.position,
+                    level + 1,
+                    0,
+                    parentData.children.length,
+                    idx,
+                    parentData.size
+                );
+            });
+            
+            // Remove old child nodes from scene
+            const childrenToRemove = nodes.filter(node => {
+                return parentData.children.some(child => child.id === node.userData.id);
+            });
+            
+            childrenToRemove.forEach(node => {
+                scene.remove(node);
+                scene.remove(node.userData.glowMesh);
+                if (node.userData.rimMesh) {
+                    scene.remove(node.userData.rimMesh);
+                }
+                if (node.userData.connectionLine) {
+                    scene.remove(node.userData.connectionLine);
+                    const connIndex = connections.indexOf(node.userData.connectionLine);
+                    if (connIndex > -1) connections.splice(connIndex, 1);
+                }
+                if (node.userData.labelDiv) {
+                    node.userData.labelDiv.remove();
+                }
+                if (node.userData.indicatorDiv) {
+                    node.userData.indicatorDiv.remove();
+                }
+                const index = nodes.indexOf(node);
+                if (index > -1) nodes.splice(index, 1);
+            });
+            
+            // Recreate child nodes (they will create their own connections)
+            parentData.children.forEach(childData => {
+                createNode(childData, parentData);
+            });
+            
+            // Close modal
+            document.getElementById('add-node-modal').classList.remove('active');
+            parentNodeForNewChild = null;
+            
+            // Update info panel
+            if (selectedNode) {
+                selectNode(selectedNode);
+            }
+        });
+        
+        // Helper function to get node level
+        function getNodeLevel(node) {
+            let level = 0;
+            let current = node;
+            
+            // Traverse up to find level (simple heuristic based on size)
+            if (node.userData.size === 2.0) level = 0;
+            else if (node.userData.size === 0.9) level = 1;
+            else if (node.userData.size === 0.4) level = 2;
+            
+            return level;
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('add-node-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('add-node-modal')) {
+                document.getElementById('add-node-modal').classList.remove('active');
+                parentNodeForNewChild = null;
+            }
+        });
+        
+        // Event listeners
+        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mousemove', onMouseMoveForDrag);
+        window.addEventListener('click', onClick);
+        
+        // Control panel buttons
+        document.getElementById('reset-view-btn').addEventListener('click', () => {
+            resetToMainView();
+        });
+        
+        document.getElementById('expand-all-btn').addEventListener('click', () => {
+            nodes.forEach(node => {
+                if (node.userData.level === 1 && !node.userData.isExpanded) {
+                    explodeChildren(node);
+                }
+            });
+        });
+        
+        document.getElementById('collapse-all-btn').addEventListener('click', () => {
+            nodes.forEach(node => {
+                if (node.userData.level === 1 && node.userData.isExpanded) {
+                    explodeChildren(node);
+                }
+            });
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotate nodes slightly
+            nodes.forEach(node => {
+                if (node.visible) {
+                    if (node !== selectedNode) {
+                        node.rotation.y += 0.005;
+                    } else {
+                        node.rotation.y += 0.01;
+                    }
+                    
+                    // Animate particle system for central node
+                    if (node.userData.particleSystem) {
+                        node.userData.particleSystem.rotation.y += 0.001;
+                        node.userData.particleSystem.rotation.x += 0.0005;
+                    }
+                    
+                    // Update label position
+                    if (node.userData.labelDiv) {
+                        const vector = new THREE.Vector3();
+                        vector.copy(node.position);
+                        vector.project(camera);
+                        
+                        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                        const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+                        const distance = camera.position.distanceTo(node.position);
+                        
+                        // Scale label based on distance
+                        const scale = Math.max(0.5, Math.min(1.5, 20 / distance));
+                        const opacity = Math.max(0.3, Math.min(1, 30 / distance));
+                        
+                        node.userData.labelDiv.style.left = x + 'px';
+                        node.userData.labelDiv.style.top = (y + 30) + 'px';
+                        node.userData.labelDiv.style.transform = `translate(-50%, 0) scale(${scale})`;
+                        node.userData.labelDiv.style.opacity = opacity;
+                    }
+                    
+                } else {
+                    // Hide UI elements for invisible nodes
+                    if (node.userData.labelDiv) {
+                        node.userData.labelDiv.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Show labels for visible nodes
+            nodes.forEach(node => {
+                if (node.visible && node.userData.labelDiv) {
+                    node.userData.labelDiv.style.display = 'block';
+                }
+            });
+            
+            // Rotate stars slowly
+            stars.rotation.y += 0.0002;
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // Check WebGL support
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (!gl) {
+                document.getElementById('loading').innerHTML = 'WebGL not supported on this device';
+                throw new Error('WebGL not supported');
+            }
+        } catch (e) {
+            console.error('WebGL check failed:', e);
+            document.getElementById('loading').innerHTML = 'Error: ' + e.message;
+            throw e;
+        }
+        
+        // Hide loading screen and start animation
+        try {
+            document.getElementById('loading').style.display = 'none';
+            animate();
+        } catch (e) {
+            console.error('Animation start failed:', e);
+            document.getElementById('loading').innerHTML = 'Error starting animation: ' + e.message;
+        }
+        } catch (error) {
+            console.error('Initialization failed:', error);
+            document.getElementById('loading').innerHTML = 'Error: ' + error.message + '<br>Please try refreshing the page.';
+        }
+        })(); // End async function
+    </script>
+</body>
+</html>
