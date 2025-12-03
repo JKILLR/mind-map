@@ -1867,6 +1867,17 @@
                 document.getElementById('modal-submit').textContent = 'Add Node';
                 this.elements.nameInput.value = '';
                 this.elements.descInput.value = '';
+                
+                // Default to parent's color
+                const parent = store.findNode(targetId);
+                if (parent) {
+                    this.selectedColor = parent.color;
+                    document.querySelectorAll('.color-option').forEach(opt => {
+                        const isSelected = opt.dataset.color === parent.color;
+                        opt.classList.toggle('selected', isSelected);
+                        opt.setAttribute('aria-checked', isSelected);
+                    });
+                }
             } else {
                 this.modalEditId = targetId;
                 this.modalParentId = null;
