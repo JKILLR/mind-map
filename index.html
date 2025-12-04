@@ -747,6 +747,27 @@
             padding: 3px 8px;
             border-radius: 4px;
             backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .node-label-emoji {
+            font-size: 12px;
+        }
+        
+        /* ─── Panel emoji and color dot ─── */
+        .panel-emoji {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .panel-color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px currentColor;
         }
         
         /* ─── Loading State ─── */
@@ -844,6 +865,142 @@
             border-radius: 4px;
             min-width: 24px;
             text-align: center;
+        }
+        
+        /* ─── Quick Capture ─── */
+        #quick-capture {
+            position: fixed;
+            bottom: var(--space-6);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: var(--z-ui);
+            width: min(500px, calc(100vw - var(--space-8)));
+            display: none;
+        }
+        
+        #quick-capture.active {
+            display: block;
+            animation: slideUp var(--duration-normal) var(--ease-out-expo);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        .quick-capture-wrapper {
+            display: flex;
+            gap: var(--space-2);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: var(--space-2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        
+        #quick-capture-input {
+            flex: 1;
+            padding: var(--space-3) var(--space-4);
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: white;
+            outline: none;
+        }
+        
+        #quick-capture-input:focus {
+            border-color: rgba(0, 240, 255, 0.3);
+        }
+        
+        #quick-capture-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .quick-capture-btn {
+            padding: var(--space-3) var(--space-4);
+            background: linear-gradient(135deg, var(--plasma-cyan), var(--plasma-blue));
+            color: var(--void);
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all var(--duration-fast);
+        }
+        
+        .quick-capture-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+        }
+        
+        .quick-capture-hint {
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: var(--space-2);
+        }
+        
+        /* ─── Emoji Picker ─── */
+        .emoji-input-wrapper {
+            display: flex;
+            gap: var(--space-2);
+        }
+        
+        .emoji-input-wrapper input {
+            flex: 1;
+        }
+        
+        #emoji-picker-btn {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 20px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+        }
+        
+        #emoji-picker-btn:hover {
+            background: var(--glass-hover);
+            border-color: rgba(0, 240, 255, 0.3);
+        }
+        
+        .emoji-grid {
+            display: none;
+            grid-template-columns: repeat(8, 1fr);
+            gap: var(--space-1);
+            margin-top: var(--space-2);
+            padding: var(--space-3);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+        }
+        
+        .emoji-grid.active {
+            display: grid;
+        }
+        
+        .emoji-option {
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all var(--duration-fast);
+        }
+        
+        .emoji-option:hover {
+            background: var(--glass-hover);
+            transform: scale(1.15);
+        }
+        
+        /* ─── Hidden file input ─── */
+        #import-input {
+            display: none;
         }
         
         /* ─── Minimap ─── */
@@ -1019,10 +1176,17 @@
             <span class="icon">↓</span>
             <span class="text">Export</span>
         </button>
+        <button class="control-btn" id="import-btn" aria-label="Import map">
+            <span class="icon">↑</span>
+            <span class="text">Import</span>
+        </button>
         <button class="control-btn" id="help-btn" aria-label="Toggle help">
             <span class="icon">?</span>
         </button>
     </nav>
+    
+    <!-- Hidden file input for import -->
+    <input type="file" id="import-input" accept=".json">
     
     <!-- Breadcrumb -->
     <nav id="breadcrumb" aria-label="Navigation path">
@@ -1034,17 +1198,32 @@
         <div class="help-title">SHORTCUTS</div>
         <div class="help-item"><span class="help-key">Click</span> Select node</div>
         <div class="help-item"><span class="help-key">Drag</span> Rotate view</div>
+        <div class="help-item"><span class="help-key">⇧+Drag</span> Pan view</div>
         <div class="help-item"><span class="help-key">Scroll</span> Zoom</div>
         <div class="help-item"><span class="help-key">Esc</span> Deselect</div>
         <div class="help-item"><span class="help-key">⌘K</span> Search</div>
+        <div class="help-item"><span class="help-key">Q</span> Quick capture</div>
         <div class="help-item"><span class="help-key">N</span> New node</div>
+        <div class="help-item"><span class="help-key">↑↓←→</span> Navigate</div>
+        <div class="help-item"><span class="help-key">⇧+↑↓</span> Reorder</div>
         <div class="help-item"><span class="help-key">Del</span> Delete node</div>
         <div class="help-item"><span class="help-key">⌘Z</span> Undo</div>
     </aside>
     
+    <!-- Quick Capture -->
+    <div id="quick-capture">
+        <div class="quick-capture-wrapper">
+            <input type="text" id="quick-capture-input" placeholder="Quick thought... (Enter to add)">
+            <button class="quick-capture-btn" id="quick-capture-submit">Add</button>
+        </div>
+        <div class="quick-capture-hint">Press Esc to close • Adding to selected node or root</div>
+    </div>
+    
     <!-- Info Panel -->
     <aside id="info-panel" role="complementary" aria-label="Selected node details">
         <div class="panel-header">
+            <span class="panel-emoji" id="panel-emoji"></span>
+            <div class="panel-color-dot" id="panel-color-dot"></div>
             <h2 id="node-title"></h2>
         </div>
         <div class="panel-info">
@@ -1064,7 +1243,11 @@
             <h3 id="modal-title">Add Node</h3>
             <div class="form-group">
                 <label for="node-name-input">Name</label>
-                <input type="text" id="node-name-input" placeholder="Enter node name..." maxlength="40" autofocus>
+                <div class="emoji-input-wrapper">
+                    <input type="text" id="node-name-input" placeholder="Enter node name..." maxlength="40" autofocus>
+                    <button id="emoji-picker-btn" type="button">✨</button>
+                </div>
+                <div class="emoji-grid" id="emoji-grid"></div>
             </div>
             <div class="form-group">
                 <label for="node-desc-input">Description (optional)</label>
@@ -1160,51 +1343,56 @@
     const defaultData = {
         id: 'mynd',
         label: 'MYND',
+        emoji: '🧠',
         color: '#00f0ff',
         description: 'Your cosmic mind map. Click to explore, add thoughts, and build connections.',
         children: [
             {
                 id: 'ideas',
                 label: 'IDEAS',
+                emoji: '💡',
                 color: '#9d4edd',
                 description: 'Creative sparks and inspirations',
                 children: [
-                    { id: 'idea-1', label: 'DREAMS', color: '#b5179e', description: 'Aspirations to explore' },
-                    { id: 'idea-2', label: 'CONCEPTS', color: '#b5179e', description: 'Abstract thoughts' },
-                    { id: 'idea-3', label: 'VISIONS', color: '#b5179e', description: 'Future possibilities' }
+                    { id: 'idea-1', label: 'DREAMS', emoji: '✨', color: '#b5179e', description: 'Aspirations to explore' },
+                    { id: 'idea-2', label: 'CONCEPTS', emoji: '🎨', color: '#b5179e', description: 'Abstract thoughts' },
+                    { id: 'idea-3', label: 'VISIONS', emoji: '🔮', color: '#b5179e', description: 'Future possibilities' }
                 ]
             },
             {
                 id: 'projects',
                 label: 'PROJECTS',
+                emoji: '🚀',
                 color: '#00ff9f',
                 description: 'Active work and initiatives',
                 children: [
-                    { id: 'proj-1', label: 'CURRENT', color: '#00d68f', description: 'In progress now' },
-                    { id: 'proj-2', label: 'PLANNED', color: '#00d68f', description: 'Coming soon' },
-                    { id: 'proj-3', label: 'ARCHIVE', color: '#00d68f', description: 'Completed work' }
+                    { id: 'proj-1', label: 'CURRENT', emoji: '⚡', color: '#00d68f', description: 'In progress now' },
+                    { id: 'proj-2', label: 'PLANNED', emoji: '📋', color: '#00d68f', description: 'Coming soon' },
+                    { id: 'proj-3', label: 'ARCHIVE', emoji: '📦', color: '#00d68f', description: 'Completed work' }
                 ]
             },
             {
                 id: 'knowledge',
                 label: 'KNOWLEDGE',
+                emoji: '📚',
                 color: '#4cc9f0',
                 description: 'Learnings and insights',
                 children: [
-                    { id: 'know-1', label: 'SKILLS', color: '#4361ee', description: 'Abilities to develop' },
-                    { id: 'know-2', label: 'NOTES', color: '#4361ee', description: 'Quick captures' },
-                    { id: 'know-3', label: 'LINKS', color: '#4361ee', description: 'Resources to remember' }
+                    { id: 'know-1', label: 'SKILLS', emoji: '🛠️', color: '#4361ee', description: 'Abilities to develop' },
+                    { id: 'know-2', label: 'NOTES', emoji: '📝', color: '#4361ee', description: 'Quick captures' },
+                    { id: 'know-3', label: 'LINKS', emoji: '🔗', color: '#4361ee', description: 'Resources to remember' }
                 ]
             },
             {
                 id: 'life',
                 label: 'LIFE',
+                emoji: '🌱',
                 color: '#ffd700',
                 description: 'Personal domains',
                 children: [
-                    { id: 'life-1', label: 'HEALTH', color: '#ffaa00', description: 'Wellbeing focus' },
-                    { id: 'life-2', label: 'GOALS', color: '#ffaa00', description: 'Targets to reach' },
-                    { id: 'life-3', label: 'MEMORIES', color: '#ffaa00', description: 'Moments to cherish' }
+                    { id: 'life-1', label: 'HEALTH', emoji: '💪', color: '#ffaa00', description: 'Wellbeing focus' },
+                    { id: 'life-2', label: 'GOALS', emoji: '🎯', color: '#ffaa00', description: 'Targets to reach' },
+                    { id: 'life-3', label: 'MEMORIES', emoji: '📸', color: '#ffaa00', description: 'Moments to cherish' }
                 ]
             }
         ]
@@ -1260,6 +1448,12 @@
             return undefined;
         }
         
+        getSiblings(id) {
+            const parent = this.findParent(id);
+            if (!parent || !parent.children) return [];
+            return parent.children;
+        }
+        
         addNode(parentId, nodeData) {
             const parent = this.findNode(parentId);
             if (!parent) return null;
@@ -1268,6 +1462,7 @@
             const newNode = {
                 id: nodeData.id || `node-${Date.now()}`,
                 label: nodeData.label,
+                emoji: nodeData.emoji || '',
                 color: nodeData.color,
                 description: nodeData.description || '',
                 children: []
@@ -1315,11 +1510,71 @@
             return result;
         }
         
+        getSiblings(id) {
+            const parent = this.findParent(id);
+            if (!parent || !parent.children) return [];
+            return parent.children;
+        }
+        
+        moveNode(nodeId, newParentId, newIndex = -1) {
+            if (nodeId === this.data.id) return false;
+            if (nodeId === newParentId) return false;
+            
+            const node = this.findNode(nodeId);
+            const oldParent = this.findParent(nodeId);
+            const newParent = this.findNode(newParentId);
+            
+            if (!node || !oldParent || !newParent) return false;
+            
+            // Check if newParent is a descendant of node (would create cycle)
+            let checkNode = newParent;
+            while (checkNode) {
+                if (checkNode.id === nodeId) return false;
+                checkNode = this.findParent(checkNode.id);
+            }
+            
+            // Remove from old parent
+            const oldIndex = oldParent.children.findIndex(c => c.id === nodeId);
+            oldParent.children.splice(oldIndex, 1);
+            
+            // Add to new parent
+            if (!newParent.children) newParent.children = [];
+            if (newIndex === -1 || newIndex >= newParent.children.length) {
+                newParent.children.push(node);
+            } else {
+                newParent.children.splice(newIndex, 0, node);
+            }
+            
+            this.expandedNodes.add(newParentId);
+            this.save();
+            bus.emit('node:moved', { node, oldParent, newParent });
+            return true;
+        }
+        
+        reorderNode(nodeId, direction) {
+            const parent = this.findParent(nodeId);
+            if (!parent || !parent.children || parent.children.length < 2) return false;
+            
+            const index = parent.children.findIndex(c => c.id === nodeId);
+            const newIndex = direction === 'up' ? index - 1 : index + 1;
+            
+            if (newIndex < 0 || newIndex >= parent.children.length) return false;
+            
+            // Swap
+            [parent.children[index], parent.children[newIndex]] = 
+            [parent.children[newIndex], parent.children[index]];
+            
+            this.save();
+            bus.emit('node:reordered', { nodeId, direction });
+            return true;
+        }
+        
         searchNodes(query) {
             const q = query.toLowerCase();
             return this.getAllNodes().filter(n => 
                 n.label.toLowerCase().includes(q) || 
-                (n.description && n.description.toLowerCase().includes(q))
+                (n.description && n.description.toLowerCase().includes(q)) ||
+                (n.emoji && n.emoji.includes(q))
             );
         }
         
@@ -1580,6 +1835,10 @@
         error() {
             this.playTone(200, 0.2, 'sawtooth', 0.03);
         }
+        
+        navigate() {
+            this.playTone(1200, 0.05, 'sine', 0.02);
+        }
     }
     
     const audio = new AudioEngine();
@@ -1596,6 +1855,8 @@
                 nodeTitle: document.getElementById('node-title'),
                 nodeDetails: document.getElementById('node-details'),
                 nodeMeta: document.getElementById('node-meta'),
+                panelColorDot: document.getElementById('panel-color-dot'),
+                panelEmoji: document.getElementById('panel-emoji'),
                 breadcrumb: document.getElementById('breadcrumb'),
                 breadcrumbPath: document.getElementById('breadcrumb-path'),
                 searchInput: document.getElementById('search-input'),
@@ -1605,16 +1866,42 @@
                 nameInput: document.getElementById('node-name-input'),
                 descInput: document.getElementById('node-desc-input'),
                 toastContainer: document.getElementById('toast-container'),
-                helpPanel: document.getElementById('help-panel')
+                helpPanel: document.getElementById('help-panel'),
+                quickCapture: document.getElementById('quick-capture'),
+                quickCaptureInput: document.getElementById('quick-capture-input'),
+                emojiGrid: document.getElementById('emoji-grid'),
+                importInput: document.getElementById('import-input')
             };
             
             this.modalMode = 'add'; // 'add' or 'edit'
             this.modalParentId = null;
             this.modalEditId = null;
             this.selectedColor = '#00f0ff';
+            this.selectedEmoji = '';
             this.searchResultIndex = -1;
             
+            this.emojis = ['💡', '🚀', '📚', '🎯', '✨', '🔮', '⚡', '📋', '📦', '🛠️', '📝', '🔗', '🌱', '💪', '📸', '🎨', '💭', '🧠', '❤️', '⭐', '🔥', '💎', '🎵', '🌟', '🏆', '🎪', '🌈', '☀️', '🌙', '🍀', '🎁', '🔔'];
+            
             this.bindEvents();
+            this.setupEmojiPicker();
+        }
+        
+        setupEmojiPicker() {
+            this.elements.emojiGrid.innerHTML = this.emojis.map(e => 
+                `<div class="emoji-option" data-emoji="${e}">${e}</div>`
+            ).join('');
+            
+            this.elements.emojiGrid.addEventListener('click', (e) => {
+                if (e.target.classList.contains('emoji-option')) {
+                    this.selectedEmoji = e.target.dataset.emoji;
+                    document.getElementById('emoji-picker-btn').textContent = this.selectedEmoji;
+                    this.elements.emojiGrid.classList.remove('active');
+                }
+            });
+            
+            document.getElementById('emoji-picker-btn').addEventListener('click', () => {
+                this.elements.emojiGrid.classList.toggle('active');
+            });
         }
         
         bindEvents() {
@@ -1631,6 +1918,27 @@
             document.getElementById('export-btn').addEventListener('click', () => this.exportMap());
             document.getElementById('help-btn').addEventListener('click', () => this.toggleHelp());
             
+            // Import
+            document.getElementById('import-btn').addEventListener('click', () => {
+                this.elements.importInput.click();
+            });
+            
+            this.elements.importInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        if (store.importJSON(ev.target.result)) {
+                            this.toast('Map imported successfully!', 'success');
+                        } else {
+                            this.toast('Failed to import map', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+                e.target.value = '';
+            });
+            
             // Add/Edit buttons
             document.getElementById('add-node-btn').addEventListener('click', () => {
                 if (store.selectedNodeId) {
@@ -1642,6 +1950,13 @@
                 if (store.selectedNodeId) {
                     this.openModal('edit', store.selectedNodeId);
                 }
+            });
+            
+            // Quick Capture
+            document.getElementById('quick-capture-submit').addEventListener('click', () => this.submitQuickCapture());
+            this.elements.quickCaptureInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.submitQuickCapture();
+                if (e.key === 'Escape') this.toggleQuickCapture(false);
             });
             
             // Modal
@@ -1688,11 +2003,12 @@
         }
         
         handleKeyboard(e) {
-            // Don't handle if in input
+            // Don't handle if in input (except for specific keys)
             if (e.target.matches('input, textarea')) {
                 if (e.key === 'Escape') {
                     e.target.blur();
                     this.closeModal();
+                    this.toggleQuickCapture(false);
                 }
                 return;
             }
@@ -1701,11 +2017,18 @@
                 case 'Escape':
                     bus.emit('ui:deselect');
                     this.closeModal();
+                    this.toggleQuickCapture(false);
                     break;
                 case 'k':
                     if (e.metaKey || e.ctrlKey) {
                         e.preventDefault();
                         this.elements.searchInput.focus();
+                    }
+                    break;
+                case 'q':
+                    if (!e.metaKey && !e.ctrlKey) {
+                        e.preventDefault();
+                        this.toggleQuickCapture();
                     }
                     break;
                 case 'n':
@@ -1720,6 +2043,39 @@
                         this.confirmDelete(store.selectedNodeId);
                     }
                     break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (e.shiftKey && store.selectedNodeId) {
+                        if (store.reorderNode(store.selectedNodeId, 'up')) {
+                            this.toast('Node moved up', 'success');
+                        }
+                    } else {
+                        bus.emit('keyboard:navigate', { direction: 'up' });
+                    }
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (e.shiftKey && store.selectedNodeId) {
+                        if (store.reorderNode(store.selectedNodeId, 'down')) {
+                            this.toast('Node moved down', 'success');
+                        }
+                    } else {
+                        bus.emit('keyboard:navigate', { direction: 'down' });
+                    }
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    bus.emit('keyboard:navigate', { direction: 'left' });
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    bus.emit('keyboard:navigate', { direction: 'right' });
+                    break;
+                case 'Enter':
+                    if (store.selectedNodeId) {
+                        bus.emit('keyboard:select');
+                    }
+                    break;
                 case 'z':
                     if (e.metaKey || e.ctrlKey) {
                         e.preventDefault();
@@ -1730,6 +2086,40 @@
                         }
                     }
                     break;
+            }
+        }
+        
+        toggleQuickCapture(force) {
+            const isActive = force !== undefined ? force : !this.elements.quickCapture.classList.contains('active');
+            
+            if (isActive) {
+                this.elements.quickCapture.classList.add('active');
+                this.elements.infoPanel.classList.remove('active');
+                setTimeout(() => this.elements.quickCaptureInput.focus(), 100);
+            } else {
+                this.elements.quickCapture.classList.remove('active');
+                this.elements.quickCaptureInput.value = '';
+            }
+        }
+        
+        submitQuickCapture() {
+            const value = this.elements.quickCaptureInput.value.trim();
+            if (!value) return;
+            
+            const parentId = store.selectedNodeId || store.data.id;
+            const parent = store.findNode(parentId);
+            
+            const newNode = store.addNode(parentId, {
+                label: value.toUpperCase(),
+                color: parent?.color || '#00f0ff',
+                emoji: '',
+                description: ''
+            });
+            
+            if (newNode) {
+                this.toast(`Added "${value}"`, 'success');
+                audio.add();
+                this.elements.quickCaptureInput.value = '';
             }
         }
         
@@ -1748,9 +2138,12 @@
             } else {
                 this.elements.searchResults.innerHTML = results.map((node, i) => {
                     const path = store.getPath(node.id).map(n => n.label).join(' › ');
+                    const icon = node.emoji 
+                        ? `<span class="search-result-icon">${node.emoji}</span>` 
+                        : `<div class="search-result-dot" style="background: ${node.color}"></div>`;
                     return `
                         <div class="search-result" data-id="${node.id}" data-index="${i}">
-                            <div class="search-result-dot" style="background: ${node.color}"></div>
+                            ${icon}
                             <span class="search-result-label">${node.label}</span>
                             <span class="search-result-path">${path}</span>
                         </div>
@@ -1807,10 +2200,16 @@
         
         showNodeInfo(nodeData) {
             store.selectedNodeId = nodeData.id;
+            this.toggleQuickCapture(false);
             
             this.elements.nodeTitle.textContent = nodeData.label;
             this.elements.nodeTitle.style.color = nodeData.color;
             this.elements.infoPanel.style.borderColor = nodeData.color;
+            this.elements.panelColorDot.style.background = nodeData.color;
+            this.elements.panelColorDot.style.color = nodeData.color;
+            this.elements.panelEmoji.textContent = nodeData.emoji || '';
+            this.elements.panelEmoji.style.display = nodeData.emoji ? 'block' : 'none';
+            this.elements.panelColorDot.style.display = nodeData.emoji ? 'none' : 'block';
             
             // Compact details - description or child count
             let details = '';
@@ -1850,7 +2249,8 @@
             
             this.elements.breadcrumbPath.innerHTML = path.map((node, i) => {
                 const isLast = i === path.length - 1;
-                return `<span class="breadcrumb-item ${isLast ? 'current' : ''}">${node.label}</span>` +
+                const emoji = node.emoji ? `${node.emoji} ` : '';
+                return `<span class="breadcrumb-item ${isLast ? 'current' : ''}">${emoji}${node.label}</span>` +
                     (isLast ? '' : '<span class="breadcrumb-separator">›</span>');
             }).join('');
             
@@ -1859,6 +2259,7 @@
         
         openModal(mode, targetId) {
             this.modalMode = mode;
+            this.elements.emojiGrid.classList.remove('active');
             
             if (mode === 'add') {
                 this.modalParentId = targetId;
@@ -1867,6 +2268,8 @@
                 document.getElementById('modal-submit').textContent = 'Add Node';
                 this.elements.nameInput.value = '';
                 this.elements.descInput.value = '';
+                this.selectedEmoji = '';
+                document.getElementById('emoji-picker-btn').textContent = '✨';
                 
                 // Default to parent's color
                 const parent = store.findNode(targetId);
@@ -1889,6 +2292,8 @@
                 this.elements.nameInput.value = node.label;
                 this.elements.descInput.value = node.description || '';
                 this.selectedColor = node.color;
+                this.selectedEmoji = node.emoji || '';
+                document.getElementById('emoji-picker-btn').textContent = node.emoji || '✨';
                 
                 document.querySelectorAll('.color-option').forEach(opt => {
                     const isSelected = opt.dataset.color === node.color;
@@ -1903,6 +2308,7 @@
         
         closeModal() {
             this.elements.modal.classList.remove('active');
+            this.elements.emojiGrid.classList.remove('active');
             this.modalParentId = null;
             this.modalEditId = null;
         }
@@ -1918,6 +2324,7 @@
             if (this.modalMode === 'add' && this.modalParentId) {
                 const newNode = store.addNode(this.modalParentId, {
                     label: name.toUpperCase(),
+                    emoji: this.selectedEmoji,
                     color: this.selectedColor,
                     description: this.elements.descInput.value.trim()
                 });
@@ -1929,6 +2336,7 @@
             } else if (this.modalMode === 'edit' && this.modalEditId) {
                 store.updateNode(this.modalEditId, {
                     label: name.toUpperCase(),
+                    emoji: this.selectedEmoji,
                     color: this.selectedColor,
                     description: this.elements.descInput.value.trim()
                 });
@@ -2024,7 +2432,7 @@
         
         const bloomPass = new UnrealBloomPass(
             new THREE.Vector2(window.innerWidth, window.innerHeight),
-            0.25, 0.3, 0.92
+            0.2, 0.3, 0.92
         );
         composer.addPass(bloomPass);
         
@@ -2034,7 +2442,30 @@
         controls.dampingFactor = 0.05;
         controls.minDistance = 8;
         controls.maxDistance = 80;
-        controls.enablePan = false;
+        controls.enablePan = true;
+        controls.panSpeed = 0.8;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        };
+        
+        // Shift+left click for panning
+        let shiftHeld = false;
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Shift' && !shiftHeld) {
+                shiftHeld = true;
+                controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'Shift') {
+                shiftHeld = false;
+                controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+            }
+        });
         
         // Lighting
         const ambientLight = new THREE.AmbientLight(0x4a5568, 0.4);
@@ -2081,6 +2512,7 @@
         const nodes = new Map();
         const connections = [];
         let selectedNode = null;
+        let keyboardFocusNode = null;
         
         // Glass material shader
         function createGlassMaterial(color, isCenter = false) {
@@ -2384,7 +2816,8 @@
             // Label - always create and show when node is visible
             const label = document.createElement('div');
             label.className = 'node-label';
-            label.textContent = data.label;
+            const emojiHtml = data.emoji ? `<span class="node-label-emoji">${data.emoji}</span>` : '';
+            label.innerHTML = `${emojiHtml}${data.label}`;
             label.style.display = data.level >= 2 ? 'none' : 'block'; // Hidden initially if collapsed
             document.body.appendChild(label);
             mesh.userData.labelDiv = label;
@@ -2712,6 +3145,7 @@
             }
             
             selectedNode = mesh;
+            keyboardFocusNode = mesh;
             selectedNode.material.uniforms.selected.value = 1;
             selectedNode.scale.set(1.12, 1.12, 1.12);
             
@@ -2780,6 +3214,9 @@
                 
                 selectedNode = null;
             }
+            
+            // Reset keyboard focus to root
+            keyboardFocusNode = nodes.get(store.data.id) || null;
             
             // Reset opacities and show all labels
             nodes.forEach(n => {
@@ -2860,6 +3297,59 @@
             setTimeout(() => selectNode(mesh), 300);
         }
         
+        // Keyboard navigation
+        function navigateKeyboard(direction) {
+            audio.navigate();
+            
+            if (!keyboardFocusNode) {
+                keyboardFocusNode = nodes.get(store.data.id);
+            }
+            
+            const currentData = keyboardFocusNode.userData;
+            let nextNode = null;
+            
+            switch (direction) {
+                case 'up': {
+                    // Go to parent
+                    if (currentData.parent) {
+                        nextNode = nodes.get(currentData.parent.id);
+                    }
+                    break;
+                }
+                case 'down': {
+                    // Go to first visible child
+                    if (currentData.children && currentData.children.length > 0) {
+                        const firstChild = nodes.get(currentData.children[0].id);
+                        if (firstChild && firstChild.visible) {
+                            nextNode = firstChild;
+                        }
+                    }
+                    break;
+                }
+                case 'left':
+                case 'right': {
+                    // Navigate between siblings
+                    const siblings = store.getSiblings(currentData.id);
+                    if (siblings.length > 1) {
+                        const currentIndex = siblings.findIndex(s => s.id === currentData.id);
+                        const nextIndex = direction === 'left' 
+                            ? (currentIndex - 1 + siblings.length) % siblings.length
+                            : (currentIndex + 1) % siblings.length;
+                        const nextSibling = nodes.get(siblings[nextIndex].id);
+                        if (nextSibling && nextSibling.visible) {
+                            nextNode = nextSibling;
+                        }
+                    }
+                    break;
+                }
+            }
+            
+            if (nextNode && nextNode !== keyboardFocusNode) {
+                keyboardFocusNode = nextNode;
+                selectNode(nextNode);
+            }
+        }
+        
         // Raycasting for interaction
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
@@ -2903,7 +3393,7 @@
         
         function onClick(e) {
             if (isDragging) return;
-            if (e.target.closest('#controls-panel, #info-panel, #search-container, #help-panel, .modal-overlay')) return;
+            if (e.target.closest('#controls-panel, #info-panel, #search-container, #help-panel, #quick-capture, .modal-overlay')) return;
             
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -3080,13 +3570,19 @@
         bus.on('node:focus', ({ id }) => focusNode(id));
         bus.on('node:added', () => rebuildScene());
         bus.on('node:deleted', () => rebuildScene());
+        bus.on('node:moved', () => rebuildScene());
+        bus.on('node:reordered', () => rebuildScene());
         bus.on('node:updated', ({ node }) => {
             const mesh = nodes.get(node.id);
             if (mesh) {
                 mesh.userData.label = node.label;
+                mesh.userData.emoji = node.emoji;
                 mesh.userData.description = node.description;
                 mesh.userData.color = node.color;
-                mesh.userData.labelDiv.textContent = node.label;
+                
+                // Update label with emoji
+                const emojiSpan = node.emoji ? `<span class="node-label-emoji">${node.emoji}</span>` : '';
+                mesh.userData.labelDiv.innerHTML = `${emojiSpan}${node.label}`;
                 mesh.material.uniforms.color.value = new THREE.Color(node.color);
                 
                 if (selectedNode === mesh) {
@@ -3096,6 +3592,10 @@
         });
         bus.on('data:reset', () => rebuildScene());
         bus.on('data:imported', () => rebuildScene());
+        bus.on('keyboard:navigate', ({ direction }) => navigateKeyboard(direction));
+        bus.on('keyboard:select', () => {
+            if (keyboardFocusNode) selectNode(keyboardFocusNode);
+        });
         
         // Build initial scene
         const processedData = calculatePositions(JSON.parse(JSON.stringify(store.data)));
@@ -3103,11 +3603,15 @@
         
         // Animation loop
         const clock = new THREE.Clock();
+        const labelRaycaster = new THREE.Raycaster();
         
         function animate() {
             requestAnimationFrame(animate);
             
             const time = clock.getElapsedTime();
+            
+            // Get visible nodes for occlusion testing
+            const visibleNodeMeshes = Array.from(nodes.values()).filter(n => n.visible);
             
             // Update nodes
             nodes.forEach(mesh => {
@@ -3140,25 +3644,31 @@
                         mesh.userData.particles.geometry.attributes.position.needsUpdate = true;
                     }
                     
-                    // Update labels - always show for visible nodes
+                    // Update labels with occlusion check
                     if (mesh.userData.labelDiv) {
-                        // Make sure label is visible when node is visible
-                        if (mesh.userData.labelDiv.style.display === 'none') {
-                            mesh.userData.labelDiv.style.display = 'block';
-                        }
-                        
                         const vector = mesh.position.clone().project(camera);
                         const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
                         const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
                         const dist = camera.position.distanceTo(mesh.position);
                         
-                        const scale = Math.max(0.5, Math.min(1.2, 18 / dist));
-                        const opacity = Math.max(0.3, Math.min(1, 25 / dist));
+                        // Check if node is occluded by another node
+                        const dirToNode = mesh.position.clone().sub(camera.position).normalize();
+                        labelRaycaster.set(camera.position, dirToNode);
+                        const intersects = labelRaycaster.intersectObjects(visibleNodeMeshes);
+                        const isOccluded = intersects.length > 0 && intersects[0].object !== mesh;
                         
-                        mesh.userData.labelDiv.style.left = x + 'px';
-                        mesh.userData.labelDiv.style.top = (y + 30) + 'px';
-                        mesh.userData.labelDiv.style.transform = `translate(-50%, 0) scale(${scale})`;
-                        mesh.userData.labelDiv.style.opacity = opacity;
+                        if (isOccluded) {
+                            mesh.userData.labelDiv.style.display = 'none';
+                        } else {
+                            mesh.userData.labelDiv.style.display = 'block';
+                            const scale = Math.max(0.5, Math.min(1.2, 18 / dist));
+                            const opacity = Math.max(0.3, Math.min(1, 25 / dist));
+                            
+                            mesh.userData.labelDiv.style.left = x + 'px';
+                            mesh.userData.labelDiv.style.top = (y + 30) + 'px';
+                            mesh.userData.labelDiv.style.transform = `translate(-50%, 0) scale(${scale})`;
+                            mesh.userData.labelDiv.style.opacity = opacity;
+                        }
                     }
                 } else {
                     // Hide label when node is not visible
